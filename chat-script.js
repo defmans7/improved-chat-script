@@ -492,11 +492,22 @@
     return (crypto && crypto.randomUUID) ? crypto.randomUUID() : ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
   }
 
-  // Utility: Get page info
+  // Utility: Get page info and useful metadata
   function getPageInfo() {
+    const now = new Date();
     return {
       pageUrl: window.location.href,
-      pageTitle: document.title
+      pageTitle: document.title,
+      userAgent: navigator.userAgent,
+      referrer: document.referrer,
+      screenWidth: window.screen.width,
+      screenHeight: window.screen.height,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      language: navigator.language,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      timestamp: now.toISOString(),
+      date: now.toISOString().slice(0, 10)
     };
   }
 
