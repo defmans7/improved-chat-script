@@ -492,6 +492,14 @@
     return (crypto && crypto.randomUUID) ? crypto.randomUUID() : ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
   }
 
+  // Utility: Get page info
+  function getPageInfo() {
+    return {
+      pageUrl: window.location.href,
+      pageTitle: document.title
+    };
+  }
+
   // Show error message in chat
   function showError(message) {
     const errorDiv = createElement('div', { className: 'chat-message bot', html: `<span style='color:red;'>${message}</span>` });
@@ -626,7 +634,10 @@
       action: "loadPreviousSession",
       sessionId: currentSessionId,
       route: config.webhook.route,
-      metadata: { userId: "" }
+      metadata: {
+        userId: "",
+        ...getPageInfo()
+      }
     }];
     try {
       const response = await fetch(config.webhook.url, {
@@ -660,7 +671,10 @@
       sessionId: currentSessionId,
       route: config.webhook.route,
       chatInput: message,
-      metadata: { userId: "" }
+      metadata: {
+        userId: "",
+        ...getPageInfo()
+      }
     };
     const userMessageDiv = createElement('div', { className: 'chat-message user', html: message });
     messagesContainer.appendChild(userMessageDiv);
