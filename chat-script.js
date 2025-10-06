@@ -387,8 +387,9 @@
     behavior: {
       // Auto-open the chat widget after N seconds (0 disables)
       autoOpenDelaySeconds: 0,
-      // Automatically open immediately on page load if URL contains a hash/fragment
-      openOnHash: true
+      // If set to a non-empty string (e.g. 'support'), auto-open only when location.hash matches (#support)
+      // Set to false or '' to disable hash-based opening. Legacy value true means open on ANY non-empty hash.
+      openOnHash: ''
     }
   };
 
@@ -412,7 +413,10 @@
   // Safety defaults if user provided partial behavior object
   if (!config.behavior) config.behavior = {};
   if (typeof config.behavior.autoOpenDelaySeconds !== 'number') config.behavior.autoOpenDelaySeconds = 0;
-  if (typeof config.behavior.openOnHash === 'undefined') config.behavior.openOnHash = true;
+  if (typeof config.behavior.openOnHash === 'undefined' || config.behavior.openOnHash === true) {
+    // Keep legacy true meaning open on any hash; default now is '' meaning disabled
+    config.behavior.openOnHash = config.behavior.openOnHash === true ? true : '';
+  }
 
   // Prevent multiple initializations
   if (window.N8NChatWidgetInitialized) return;
@@ -763,11 +767,23 @@
   });
 
   // Auto-open logic
-  // 1. Open immediately if URL has a fragment and setting enabled
-  if (config.behavior.openOnHash && window.location.hash && window.location.hash.length > 1) {
-    openChat();
+  // Hash-based opening logic (string match or legacy true)
+  const openOnHashSetting = config.behavior.openOnHash;
+  if (!chatContainer.classList.contains('open')) {
+    if (typeof openOnHashSetting === 'string' && openOnHashSetting.trim() !== '') {
+      const target = openOnHashSetting.replace(/^#/, '').trim();
+      const current = window.location.hash.replace(/^#/, '').trim();
+      if (current && current === target) {
+        openChat();
+      }
+    } else if (openOnHashSetting === true) {
+      // Legacy behavior: any hash triggers
+      if (window.location.hash && window.location.hash.length > 1) {
+        openChat();
+      }
+    }
   }
-  // 2. Schedule auto-open after delay if not already open
+  // Timed auto-open (only if still not open)
   if (!chatContainer.classList.contains('open') && config.behavior.autoOpenDelaySeconds > 0) {
     setTimeout(() => {
       if (!chatContainer.classList.contains('open')) {
