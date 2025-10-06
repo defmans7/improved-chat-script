@@ -1,5 +1,5 @@
 // Chat Widget Script
-(function() {
+(function () {
   // Utility: Merge configs deeply
   function deepMerge(target, source) {
     for (const key in source) {
@@ -37,7 +37,7 @@
     }
     if (!document.getElementById('n8n-chat-style')) {
       const styleSheet = createElement('style', {
-        attrs: { id: 'n8n-chat-style' },
+        attrs: {id: 'n8n-chat-style'},
         html: styles
       });
       document.head.appendChild(styleSheet);
@@ -439,7 +439,7 @@
   let currentSessionId = '';
 
   // Create widget container
-  const widgetContainer = createElement('div', { className: 'n8n-chat-widget' });
+  const widgetContainer = createElement('div', {className: 'n8n-chat-widget'});
 
   // Set CSS variables for colors
   Object.entries({
@@ -526,7 +526,7 @@
 
   // Utility: Generate UUID
   function generateUUID() {
-    return (crypto && crypto.randomUUID) ? crypto.randomUUID() : ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+    return (crypto && crypto.randomUUID) ? crypto.randomUUID() : ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
   }
 
   // Utility: Get page info and useful metadata
@@ -550,7 +550,7 @@
 
   // Show error message in chat
   function showError(message) {
-    const errorDiv = createElement('div', { className: 'chat-message bot', html: `<span style='color:red;'>${message}</span>` });
+    const errorDiv = createElement('div', {className: 'chat-message bot', html: `<span style='color:red;'>${message}</span>`});
     messagesContainer.appendChild(errorDiv);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   }
@@ -666,7 +666,7 @@
   function formatUrls(text) {
     // Regex matches http(s)://, www., and bare domains
     const urlRegex = /((https?:\/\/|www\.)[\w\-]+(\.[\w\-]+)+(:\d+)?(\/[\w\-._~:/?#[\]@!$&'()*+,;=]*)?)/gi;
-    return text.replace(urlRegex, function(url) {
+    return text.replace(urlRegex, function (url) {
       let href = url;
       if (!href.match(/^https?:\/\//)) {
         href = 'https://' + href;
@@ -679,7 +679,7 @@
   let lastUserActivity = Date.now();
   let ctaTimeout = null;
   let lastBotResponse = null;
-  const CTA_DELAY_MS = 10000; // 10 seconds of inactivity
+  const CTA_DELAY_MS = 15000;
 
   // Clear CTA timeout when user starts typing
   function resetUserActivity() {
@@ -737,7 +737,7 @@
     try {
       const response = await fetch(config.webhook.url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(data)
       });
       if (!response.ok) throw new Error('Network error');
@@ -778,7 +778,7 @@
 
     // Only add user message div if this is not a retry
     if (!isRetry) {
-      const userMessageDiv = createElement('div', { className: 'chat-message user', html: message });
+      const userMessageDiv = createElement('div', {className: 'chat-message user', html: message});
       messagesContainer.appendChild(userMessageDiv);
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
@@ -787,7 +787,7 @@
     try {
       const response = await fetch(config.webhook.url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(messageData)
       });
       if (!response.ok) throw new Error('Network error');
