@@ -675,6 +675,53 @@
     });
   }
 
+  // Track user typing activity for CTA timing
+  let lastUserActivity = Date.now();
+  let ctaTimeout = null;
+  let lastBotResponse = null;
+  const CTA_DELAY_MS = 10000; // 10 seconds of inactivity
+
+  // Clear CTA timeout when user starts typing
+  function resetUserActivity() {
+    lastUserActivity = Date.now();
+    if (ctaTimeout) {
+      clearTimeout(ctaTimeout);
+      ctaTimeout = null;
+    }
+  }
+
+  // Show CTA message if available
+  function showCTAMessage(responseData) {
+    if (!responseData.call_to_action || !responseData.cta_question) return;
+
+    const ctaHTML = `
+      <div style="">
+        <p style="margin: 0 0 8px 0; font-weight: 500; color: var(--chat--color-primary);">${responseData.call_to_action}</p>
+        <p style="margin: 0 0 12px 0; font-size: 14px;">${responseData.cta_question}</p>
+        ${responseData.cta_link ? `<a href="${responseData.cta_link}" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 8px 16px; background: var(--chat--color-primary); color: white; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">Get in touch</a>` : ''}
+      </div>
+    `;
+
+    const ctaMessageDiv = createElement('div', {
+      className: 'chat-message bot',
+      html: ctaHTML
+    });
+    messagesContainer.appendChild(ctaMessageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  // Schedule CTA message after user inactivity
+  function scheduleCTAMessage(responseData) {
+    if (!responseData.call_to_action || !responseData.cta_question) return;
+
+    ctaTimeout = setTimeout(() => {
+      // Check if user is still inactive
+      if (Date.now() - lastUserActivity >= CTA_DELAY_MS) {
+        showCTAMessage(responseData);
+      }
+    }, CTA_DELAY_MS);
+  }
+
   // Start new conversation
   async function startNewConversation() {
     currentSessionId = generateUUID();
@@ -712,8 +759,12 @@
   }
 
   // Send message
-  async function sendMessage(message) {
+  async function sendMessage(message, isRetry = false) {
     if (!message) return;
+
+    // Reset activity and clear any pending CTA
+    resetUserActivity();
+
     const messageData = {
       action: "sendMessage",
       sessionId: currentSessionId,
@@ -724,9 +775,14 @@
         ...getPageInfo()
       }
     };
-    const userMessageDiv = createElement('div', { className: 'chat-message user', html: message });
-    messagesContainer.appendChild(userMessageDiv);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    // Only add user message div if this is not a retry
+    if (!isRetry) {
+      const userMessageDiv = createElement('div', { className: 'chat-message user', html: message });
+      messagesContainer.appendChild(userMessageDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
     showThinkingIndicator();
     try {
       const response = await fetch(config.webhook.url, {
@@ -737,17 +793,46 @@
       if (!response.ok) throw new Error('Network error');
       const data = await response.json();
       hideThinkingIndicator();
+
+      // Handle both old format (string/array) and new format (object)
+      let outputText = '';
+      let responseData = null;
+
+      if (typeof data === 'string') {
+        outputText = data;
+      } else if (Array.isArray(data)) {
+        outputText = data[0]?.output || data[0] || '';
+        responseData = data[0];
+      } else if (data && typeof data === 'object') {
+        outputText = data.output || '';
+        responseData = data;
+      }
+
       const botMessageDiv = createElement('div', {
         className: 'chat-message bot',
-        html: formatUrls(Array.isArray(data) ? data[0].output : data.output)
+        html: formatUrls(outputText)
       });
       messagesContainer.appendChild(botMessageDiv);
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+      // Store response data and schedule CTA if available
+      lastBotResponse = responseData;
+      if (responseData && (responseData.call_to_action || responseData.cta_question)) {
+        scheduleCTAMessage(responseData);
+      }
+
       focusInput();
     } catch (error) {
       hideThinkingIndicator();
-      showError('Failed to send message. Please try again.');
-      console.error('Error:', error);
+      if (!isRetry) {
+        showError('Failed to receive response. Trying again...');
+        // Auto-retry once on failure
+        console.log('Message failed, retrying once...');
+        setTimeout(() => sendMessage(message, true), 1000);
+      } else {
+        showError('Failed to receive response. Please try again.');
+        console.error('Error:', error);
+      }
     }
   }
 
@@ -760,6 +845,11 @@
       textarea.value = '';
     }
   });
+
+  // Reset user activity on typing
+  textarea.addEventListener('input', resetUserActivity);
+  textarea.addEventListener('keydown', resetUserActivity);
+
   textarea.addEventListener('keypress', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
