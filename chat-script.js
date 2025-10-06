@@ -563,7 +563,7 @@
   let thinkingWordTimeout1 = null;
   let thinkingWordTimeout2 = null;
 
-  function getRandomDelay(min = 1500, max = 3000) {
+  function getRandomDelay(min = 1500, max = 5500) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
@@ -770,10 +770,12 @@
       }
     }
   });
+
   toggleButton.addEventListener('click', () => {
     chatContainer.classList.toggle('open');
     if (chatContainer.classList.contains('open')) focusInput();
   });
+
   closeButtons.forEach(button => {
     button.addEventListener('click', () => {
       chatContainer.classList.remove('open');
